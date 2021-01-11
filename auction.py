@@ -7,12 +7,12 @@
 import sys
 import json
 import numpy as np
-from time import time
-from lapjv import lapjv
+from time import perf_counter_ns
+from lap import lapjv
 from numba import njit, prange
 
 @njit()
-def auction(X, eps=1e-3):
+def auction(X, eps=1):
     n_bidders, n_items = X.shape
     
     cost = np.zeros(n_items)
@@ -90,32 +90,42 @@ def auction(X, eps=1e-3):
 # --
 # Init
 
-n_bidders = 20_000
-n_items   = 20_000
-max_val   = 100
+# n_bidders = 20_000
+# n_items   = 20_000
+# max_val   = 100
 
-X = np.random.uniform(0, max_val, (n_bidders, n_items))
+# X = np.random.uniform(0, max_val, (n_bidders, n_items))
+# print('X: done', file=sys.stderr)
+
+# X = np.loadtxt('cpp/prob.txt')
+X = np.fromfile('cpp/prob.bin', dtype=np.float32)
+n = int(np.sqrt(X.shape[0]))
+X = X.reshape(n, n)
+
+n_bidders = X.shape[0]
+n_items   = X.shape[1]
+max_val   = X.max()
 print('X: done', file=sys.stderr)
 
 # --
 # Auction
 
-_ = auction(X[:100,:100])
+# _ = auction(X[:100,:100])
 
-t = time()
-bidder2item, cost = auction(X)
-auc_time = time() - t
+# t = perf_counter_ns()
+# bidder2item, cost = auction(X)
+# auc_time = perf_counter_ns() - t
 
-auc_score = X[(np.arange(n_bidders), bidder2item)].sum()
+# auc_score = X[(np.arange(n_bidders), bidder2item)].sum()
 
-print('auc: done', file=sys.stderr)
+# print('auc: done', file=sys.stderr)
 
 # --
 # Baseline (JV)
 
-t = time()
-row_ind, _, _ = lapjv(X.max() - X)
-lap_time  = time() - t
+t = perf_counter_ns()
+_, row_ind, _ = lapjv(X.max() - X)
+lap_time  = perf_counter_ns() - t
 
 lap_score = X[(np.arange(n_bidders), row_ind)].sum()
 
@@ -125,8 +135,8 @@ print('lap: done', file=sys.stderr)
 # Log
 
 print(json.dumps({
-    "auc_score" : float(auc_score), 
+    # "auc_score" : float(auc_score), 
     "lap_score" : float(lap_score),
-    "auc_time"  : float(auc_time),
-    "lap_time"  : float(lap_time),
+    # "auc_time"  : float(auc_time / 1e6),
+    "lap_time"  : float(lap_time / 1e6),
 }))
