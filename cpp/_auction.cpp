@@ -1,53 +1,16 @@
 #pragma GCC diagnostic ignored "-Wunused-result"
 
-// #include <pybind11/pybind11.h>
-// #include <torch/extension.h>
-#include "tmp.h"
+#include <stdio.h>
+#include <chrono>
+#include "omp.h"
+#include "_auction.h"
 
-#define SEED 123123
+using namespace std::chrono;
 
-std::default_random_engine generator(SEED);
-
-const Int n_bidders = 32768;
-const Int n_items   = 32768;
-const Int max_cost  = 100000000;
-const Real eps      = 0.5;
-
-// --
-// Helpers
-
-void uniform_random_problem(Real* cost_matrix) {
-  std::uniform_int_distribution<Int> distribution(0, max_cost);
-
-  for (long i = 0; i < n_items * n_bidders; i++) {
-    cost_matrix[i] = (Real)distribution(generator);
-  }
+template<typename T>
+void fill(T* x, Int n, T val) {
+  for(Int i = 0; i < n; i++) x[i] = val;
 }
-
-void save_matrix(Real* cost_matrix) {  
-  printf("save_matrix: start\n");
-  
-  FILE* f;
-  f = fopen("prob.bin", "wb");
-  fwrite(cost_matrix, sizeof(Real), n_bidders * n_items, f);
-  fclose(f);
-  
-  printf("save_matrix: done\n");
-}
-
-void load_matrix(Real* cost_matrix) {  
-  printf("load_matrix: start\n");
-  
-  FILE* f;
-  f = fopen("prob.bin", "rb");
-  fread(cost_matrix, sizeof(Real), n_bidders * n_items, f);
-  fclose(f);
-  
-  printf("load_matrix: done\n");
-}
-
-// --
-// Auction algorithm
 
 long long auction(Real* cost_matrix, Int* bidder2item) {
   auto t_start = high_resolution_clock::now();
@@ -153,47 +116,3 @@ long long auction(Real* cost_matrix, Int* bidder2item) {
   
   return duration_cast<microseconds>(high_resolution_clock::now() - t_start).count();
 }
-
-int main(int argc, char *argv[]) {
-  
-  Int* bidder2item  = (Int*)malloc(n_bidders * sizeof(Int));
-  Real* cost_matrix = (Real*)malloc(n_items * n_bidders * sizeof(Real));
-
-  // --
-  // Generate problem  
-  uniform_random_problem(cost_matrix);
-  save_matrix(cost_matrix);
-  // load_matrix();
-  
-  // --
-  // Solve problem
-  
-  long long elapsed = auction(cost_matrix, bidder2item);
-  
-  // --
-  // Eval
-  
-  Real final_cost = 0;
-  for(Int bidder = 0; bidder < n_bidders; bidder++) {
-    final_cost += cost_matrix[n_bidders * bidder + bidder2item[bidder]];
-  }
-  printf("final_cost = %f | elapsed = %f\n", final_cost, float(elapsed) / 1000);
-}
-
-// #define _PYTHON_INTERFACE
-// #ifdef _PYTHON_INTERFACE
-
-// long long py_auction(
-//   torch::Tensor cost_matrix,
-//   torch::Tensor bidder2item
-// ) {
-//   return auction(
-//     cost_matrix.data_ptr<Real>(),
-//     bidder2item.data_ptr<Int>()
-//   );
-// }
-
-// PYBIND11_MODULE(auction, m) {
-//   m.def("auction", py_auction);
-// }
-// #endif
