@@ -1,10 +1,10 @@
-CXXFLAGS += -std=c++11 -mtune=native -march=native -Wall -O3 -DNDEBUG -g -fopenmp
+CXXFLAGS += -std=c++14 -mtune=native -march=native -Wall -O3 -DNDEBUG -g -fopenmp
 LIBS += -lrt
 
-all: auction
+all: main
 
-apsp: auction.cpp
-	g++ $(CXXFLAGS) -o auction auction.cpp
+main: main.cpp
+	g++ $(CXXFLAGS) main.cpp -o main
 
 clean:
-	rm -rf auction *.o
+	rm -rf main *.o
