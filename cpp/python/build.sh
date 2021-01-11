@@ -2,6 +2,8 @@
 
 # build.sh
 
+# git clone https://github.com/pybind/pybind11
+
 rm -rf build
 mkdir build
 cd build
