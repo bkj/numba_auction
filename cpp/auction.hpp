@@ -52,50 +52,40 @@ void fill(Val* x, Int n, Val val) {
 
 template <typename Int, typename Real>
 long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* bidder2item) {
-  auto t_start = high_resolution_clock::now();
+  // --
+  // Init
   
-  Real* cost       = (Real*)malloc(n_items * sizeof(Real));
-  Real* high_bids  = (Real*)malloc(n_items * sizeof(Real));
-  Int* high_bidder = (Int*)malloc(n_items * sizeof(Int));
-  Int* item2bidder = (Int*)malloc(n_items * sizeof(Int));
-  
-  fill<Real>(cost, n_items, 0);
-  fill<Real>(high_bids, n_items, -1);
-  fill<Int>(high_bidder, n_items, -1);
-  fill<Int>(item2bidder, n_items, -1);
   fill<Int>(bidder2item, n_bidders, -1);
   
+  Real* cost = (Real*)malloc(n_items * sizeof(Real));
+  fill<Real>(cost, n_items, 0);
+  
+  Int* item2bidder = (Int*)malloc(n_items * sizeof(Int));
+  fill<Int>(item2bidder, n_items, -1);
+  
   Int* idx1  = (Int*)malloc(n_bidders * sizeof(Int));
-  Int* idx2  = (Int*)malloc(n_bidders * sizeof(Int));
-  Real* val1 = (Real*)malloc(n_bidders * sizeof(Real));
-  Real* val2 = (Real*)malloc(n_bidders * sizeof(Real));
-  
-  Int unassigned_bidders = n_bidders;
-
-#ifdef VERBOSE
-  Int loop_counter = 0;
-#endif
-  
   fill<Int>(idx1, n_bidders, -1);
-  fill<Int>(idx2, n_bidders, -1);
+  
+  Real* val1 = (Real*)malloc(n_bidders * sizeof(Real));
   fill<Real>(val1, n_bidders, -1);
+  
+  Real* val2 = (Real*)malloc(n_bidders * sizeof(Real));
   fill<Real>(val2, n_bidders, -1);
   
-  while(unassigned_bidders > 0) {
-
-#ifdef VERBOSE
-    printf("%d ", unassigned_bidders);
-    auto t1 = high_resolution_clock::now();
-#endif
+  // --
+  // Run
   
-    // --
-    // Bid
+  auto t_start = high_resolution_clock::now();
+  
+  Int loop_counter = 0;
+  for(Int start = 0; start < n_bidders; start++) { // This may give non-uniform work to threads
+    Int bidder = start;
+    if(bidder2item[bidder] != -1) continue;
     
-    for(Int bidder = 0; bidder < n_bidders; bidder++) { // This may give non-uniform work to threads
-      if(bidder2item[bidder] != -1) continue;
-
-      struct T<Int, Real> acc  = {-1, -1, -1};
+    while(true) {
+      loop_counter++;
       
+      struct T<Int, Real> acc  = {-1, -1, -1};
       #pragma omp parallel for reduction(T_max:acc) default(none) shared(n_bidders, n_items, cost_matrix, bidder, cost)
       for(Int item = 0; item < n_items; item++) {
         Real val = cost_matrix[n_bidders * bidder + item] - cost[item];
@@ -111,21 +101,23 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
       Real bid = acc.val1 - acc.val2 + eps;
       cost[acc.idx1] += bid;
       
-      if(item2bidder[acc.idx1] != -1) {
-        bidder2item[item2bidder[acc.idx1]] = -1;
-      } else {
-        unassigned_bidders--;
+      bool had_bidder = item2bidder[acc.idx1] != -1;
+      
+      Int prev_bidder;
+      if(had_bidder) {
+        prev_bidder = item2bidder[acc.idx1];
+        bidder2item[prev_bidder] = -1;
       }
-      bidder2item[bidder] = acc.idx1;
-      item2bidder[acc.idx1]  = bidder;
+      
+      bidder2item[bidder]   = acc.idx1;
+      item2bidder[acc.idx1] = bidder;
+      
+      if(!had_bidder) break;
+      bidder = prev_bidder;
     }
-
-#ifdef VERBOSE
-    long long loop_time = duration_cast<microseconds>(high_resolution_clock::now() - t1).count();
-    printf("%d %lld \n", loop_counter, loop_time);
-    loop_counter++;
-#endif
   }
+  
+  printf("loop_counter = %d | ", loop_counter);
   
   return duration_cast<microseconds>(high_resolution_clock::now() - t_start).count();
 }
