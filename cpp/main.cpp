@@ -29,25 +29,25 @@ void uniform_random_problem(Real* cost_matrix) {
 }
 
 void save_matrix(Real* cost_matrix) {  
-  printf("save_matrix: start\n");
+  // printf("save_matrix: start\n");
   
   FILE* f;
   f = fopen("prob.bin", "wb");
   fwrite(cost_matrix, sizeof(Real), n_bidders * n_items, f);
   fclose(f);
   
-  printf("save_matrix: done\n");
+  // printf("save_matrix: done\n");
 }
 
 void load_matrix(Real* cost_matrix) {  
-  printf("load_matrix: start\n");
+  // printf("load_matrix: start\n");
   
   FILE* f;
   f = fopen("prob.bin", "rb");
   fread(cost_matrix, sizeof(Real), n_bidders * n_items, f);
   fclose(f);
   
-  printf("load_matrix: done\n");
+  // printf("load_matrix: done\n");
 }
 
 // --
@@ -60,9 +60,9 @@ int main(int argc, char *argv[]) {
 
   // --
   // Generate problem  
-  uniform_random_problem(cost_matrix);
-  save_matrix(cost_matrix);
-  // load_matrix();
+  // uniform_random_problem(cost_matrix);
+  // save_matrix(cost_matrix);
+  load_matrix(cost_matrix);
   
   // --
   // Solve problem
