@@ -11,7 +11,7 @@
 
 using namespace std::chrono;
 
-#define VERBOSE
+// #define VERBOSE
 
 template<typename Int, typename Real>
 struct T {
@@ -82,7 +82,7 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
   fill<Int>(idx2, n_bidders, -1);
   fill<Real>(val1, n_bidders, -1);
   fill<Real>(val2, n_bidders, -1);
-
+  
   while(unassigned_bidders > 0) {
 
 #ifdef VERBOSE
@@ -92,107 +92,37 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
   
     // --
     // Bid
-        
-    // Int thresh = -1;
-    Int thresh = 8;
     
-    if(unassigned_bidders > thresh) {
-      #pragma omp parallel for
-      for(Int bidder = 0; bidder < n_bidders; bidder++) { // This may give non-uniform work to threads
-        if(bidder2item[bidder] != -1) continue;
-
-        Int idx2_  = -1;
-        Int idx1_  = -1;
-        Real val2_ = -1;
-        Real val1_ = -1;
-        
-        for(Int item = 0; item < n_items; item++) {
-          Real val = cost_matrix[n_bidders * bidder + item] - cost[item];
-          if(val > val1_) {
-            idx2_ = idx1_;
-            val2_ = val1_;
-            
-            idx1_ = item;
-            val1_ = val;
-          } else if(val > val2_) {
-            idx2_ = item;
-            val2_ = val;
-          }
-        }
-        
-        idx1[bidder] = idx1_;
-        val1[bidder] = val1_;
-        idx2[bidder] = idx2_;
-        val2[bidder] = val2_; 
-      }
-      
-    } else {
-      
-      // For sufficiently large problems, this seems to help
-      
-      for(Int bidder = 0; bidder < n_bidders; bidder++) {
-        if(bidder2item[bidder] != -1) continue;
-
-        struct T<Int, Real> acc  = {-1, -1, -1, -1};
-        
-        #pragma omp parallel for reduction(T_max:acc) default(none) shared(n_bidders, n_items, cost_matrix, bidder, cost) num_threads(4)
-        for(Int item = 0; item < n_items; item++) {
-          Real val = cost_matrix[n_bidders * bidder + item] - cost[item];
-          if(val > acc.val1) {
-            acc.idx2 = acc.idx1;
-            acc.val2 = acc.val1;
-            
-            acc.idx1 = item;
-            acc.val1 = val;
-          } else if(val > acc.val2) { // Tiebreaking is needed, I think
-            acc.idx2 = item;
-            acc.val2 = val;
-          }
-        }
-
-        idx1[bidder] = acc.idx1;
-        val1[bidder] = acc.val1;
-        idx2[bidder] = acc.idx2;
-        val2[bidder] = acc.val2;
-      }
-    }
-    
-    // --
-    // Compete
-
-    // fill<Real>(high_bids, n_items, -1);
-    // fill<Int>(high_bidder, n_items, -1);
-
-    for(Int bidder = 0; bidder < n_bidders; bidder++) {
+    for(Int bidder = 0; bidder < n_bidders; bidder++) { // This may give non-uniform work to threads
       if(bidder2item[bidder] != -1) continue;
+
+      Int idx1_  = -1;
+      Real val2_ = -1;
+      Real val1_ = -1;
       
-      Real bid = val1[bidder] - val2[bidder] + eps;
-      if(bid > high_bids[idx1[bidder]]) {
-        high_bids[idx1[bidder]]   = bid;
-        high_bidder[idx1[bidder]] = bidder;
-      }
-    }
-    
-    // --
-    // Assign
-    
-    for(Int item = 0; item < n_items; item++) {
-      if(high_bids[item] == -1) continue;
-      
-      cost[item] += high_bids[item];
-      
-      if(item2bidder[item] != -1) {
-        bidder2item[item2bidder[item]] = -1;
-        unassigned_bidders++;
+      for(Int item = 0; item < n_items; item++) {
+        Real val = cost_matrix[n_bidders * bidder + item] - cost[item];
+        if(val > val1_) {
+          val2_ = val1_;
+          idx1_ = item;
+          val1_ = val;
+        } else if(val > val2_) {
+          val2_ = val;
+        }
       }
       
-      item2bidder[item] = high_bidder[item];
-      bidder2item[high_bidder[item]] = item;
-      unassigned_bidders--;
+      Real bid = val1_ - val2_ + eps;
+      cost[idx1_] += bid;
       
-      high_bids[item]   = -1;
-      high_bidder[item] = -1;
+      if(item2bidder[idx1_] != -1) {
+        bidder2item[item2bidder[idx1_]] = -1;
+      } else {
+        unassigned_bidders--;
+      }
+      bidder2item[bidder] = idx1_;
+      item2bidder[idx1_]  = bidder;
     }
+
 #ifdef VERBOSE
     long long loop_time = duration_cast<microseconds>(high_resolution_clock::now() - t1).count();
     printf("%d %lld \n", loop_counter, loop_time);

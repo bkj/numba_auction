@@ -13,8 +13,8 @@ std::default_random_engine generator(SEED);
 typedef int Int;
 typedef double Real;
 
-const Int n_bidders = 40000;
-const Int n_items   = 40000;
+const Int n_bidders = 10000;
+const Int n_items   = 10000;
 const Int max_cost  = 10000;
 const Real eps      = 0.5;
 
@@ -63,9 +63,9 @@ int main(int argc, char *argv[]) {
 
   // --
   // Generate problem  
-  // uniform_random_problem(cost_matrix);
-  // save_matrix(cost_matrix);
-  load_matrix(cost_matrix);
+  uniform_random_problem(cost_matrix);
+  save_matrix(cost_matrix);
+  // load_matrix(cost_matrix);
   
   // --
   // Solve problem
