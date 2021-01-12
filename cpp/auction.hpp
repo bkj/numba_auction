@@ -75,16 +75,18 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
   // --
   // Run
   
-  auto t_start = high_resolution_clock::now();
+  auto t_start  = high_resolution_clock::now();
+  auto t_reduce = duration_cast<microseconds>(t_start - t_start).count();
   
   Int loop_counter = 0;
-  for(Int start = 0; start < n_bidders; start++) { // This may give non-uniform work to threads
+  for(Int start = 0; start < n_bidders; start++) {
     Int bidder = start;
     if(bidder2item[bidder] != -1) continue;
     
     while(true) {
       loop_counter++;
       
+      auto t0 = high_resolution_clock::now();
       struct T<Int, Real> acc  = {-1, -1, -1};
       #pragma omp parallel for reduction(T_max:acc) default(none) shared(n_bidders, n_items, cost_matrix, bidder, cost)
       for(Int item = 0; item < n_items; item++) {
@@ -97,6 +99,8 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
           acc.val2 = val;
         }
       }
+      auto t1 = high_resolution_clock::now();
+      t_reduce += duration_cast<microseconds>(t1 - t0).count();
       
       cost[acc.idx1] += acc.val1 - acc.val2 + eps;;
       
@@ -116,9 +120,11 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
     }
   }
   
-  printf("loop_counter = %d | ", loop_counter);
+  auto elapsed = duration_cast<microseconds>(high_resolution_clock::now() - t_start).count();
   
-  return duration_cast<microseconds>(high_resolution_clock::now() - t_start).count();
+  printf("loop_counter=%d | t_reduce=%ld | elapsed=%ld | ", loop_counter, t_reduce, elapsed);
+  
+  return elapsed;
 }
 
 #endif
