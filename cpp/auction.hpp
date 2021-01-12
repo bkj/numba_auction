@@ -40,9 +40,8 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
   
   Int unassigned_bidders = n_bidders;
 
-#ifdef VERBOSE
   Int loop_counter = 0;
-#endif
+
   
   fill<Int>(idx1, n_bidders, -1);
   fill<Int>(idx2, n_bidders, -1);
@@ -56,6 +55,8 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
     auto t1 = high_resolution_clock::now();
 #endif
   
+    loop_counter += unassigned_bidders;
+    
     // --
     // Bid
     
@@ -125,6 +126,7 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
 #endif
   }
   
+  printf("loop_counter=%d | ", loop_counter);
   return duration_cast<microseconds>(high_resolution_clock::now() - t_start).count();
 }
 
