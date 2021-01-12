@@ -16,7 +16,7 @@ typedef double Real;
 const Int n_bidders = 4000;
 const Int n_items   = 4000;
 const Int max_cost  = 1000;
-const Real eps      = 1.0 / 4001;
+const Real eps      = 0.1;
 
 // --
 // Helpers
