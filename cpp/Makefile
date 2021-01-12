@@ -3,7 +3,7 @@ LIBS += -lrt
 
 all: main
 
-main: main.cpp
+main: main.cpp auction.hpp
 	g++ $(CXXFLAGS) main.cpp -o main
 
 clean:

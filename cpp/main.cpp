@@ -12,9 +12,9 @@ std::default_random_engine generator(SEED);
 typedef int Int;
 typedef double Real;
 
-const Int n_bidders = 4000;
-const Int n_items   = 4000;
-const Int max_cost  = 1000;
+const Int n_bidders = 16000;
+const Int n_items   = 16000;
+const Int max_cost  = 10000;
 const Real eps      = 0.1;
 
 // --
@@ -55,26 +55,42 @@ void load_matrix(Real* cost_matrix) {
 
 int main(int argc, char *argv[]) {
   
-  Int* bidder2item  = (Int*)malloc(n_bidders * sizeof(Int));
-  Real* cost_matrix = (Real*)malloc(n_items * n_bidders * sizeof(Real));
-
   // --
   // Generate problem  
+  
+  Real* cost_matrix = (Real*)malloc(n_items * n_bidders * sizeof(Real));
   uniform_random_problem(cost_matrix);
   save_matrix(cost_matrix);
   // load_matrix(cost_matrix);
   
   // --
-  // Solve problem
+  // Init
   
-  long long elapsed = auction<Int, Real>(cost_matrix, n_bidders, n_items, eps, bidder2item);
+  Int* bidder2item = (Int*)malloc(n_bidders * sizeof(Int));
+  
+  // --
+  // Solve problem (block)
+  
+  for(Int i = 0; i < n_bidders; i++) bidder2item[i] = -1;
+  
+  auto block_start   = high_resolution_clock::now();
+  auto block_cost    = auction<Int, Real>(cost_matrix, n_bidders, n_items, eps, bidder2item, 1);
+  auto block_stop    = high_resolution_clock::now();
+  auto block_elapsed = duration_cast<microseconds>(block_stop - block_start).count();
+  
+  // --
+  // Solve problem (single)
+  
+  for(Int i = 0; i < n_bidders; i++) bidder2item[i] = -1; // reset
+  
+  auto single_start   = high_resolution_clock::now();
+  auto single_cost    = auction<Int, Real>(cost_matrix, n_bidders, n_items, eps, bidder2item, 2);
+  auto single_stop    = high_resolution_clock::now();
+  auto single_elapsed = duration_cast<microseconds>(single_stop - single_start).count();
   
   // --
   // Eval
   
-  Real final_cost = 0.0;
-  for(Int bidder = 0; bidder < n_bidders; bidder++) {
-    final_cost += cost_matrix[n_bidders * bidder + bidder2item[bidder]];
-  }
-  printf("final_cost = %f | elapsed = %f\n", final_cost, float(elapsed) / 1000);
+  // printf("block_cost = %f | single_cost = %f | block_elapsed = %f | single_elapsed = %f\n", 
+  //   block_cost, single_cost, float(block_elapsed) / 1000, float(single_elapsed) / 1000);
 }
