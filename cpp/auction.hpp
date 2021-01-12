@@ -96,31 +96,33 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
     for(Int bidder = 0; bidder < n_bidders; bidder++) { // This may give non-uniform work to threads
       if(bidder2item[bidder] != -1) continue;
 
-      Int idx1_  = -1;
-      Real val2_ = -1;
-      Real val1_ = -1;
+      struct T<Int, Real> acc  = {-1, -1, -1, -1};
       
+      #pragma omp parallel for reduction(T_max:acc) default(none) shared(n_bidders, n_items, cost_matrix, bidder, cost)
       for(Int item = 0; item < n_items; item++) {
         Real val = cost_matrix[n_bidders * bidder + item] - cost[item];
-        if(val > val1_) {
-          val2_ = val1_;
-          idx1_ = item;
-          val1_ = val;
-        } else if(val > val2_) {
-          val2_ = val;
+        if(val > acc.val1) {
+          acc.idx2 = acc.idx1;
+          acc.val2 = acc.val1;
+          
+          acc.idx1 = item;
+          acc.val1 = val;
+        } else if(val > acc.val2) { // Tiebreaking is sometimes needed
+          acc.idx2 = item;
+          acc.val2 = val;
         }
       }
       
-      Real bid = val1_ - val2_ + eps;
-      cost[idx1_] += bid;
+      Real bid = acc.val1 - acc.val2 + eps;
+      cost[acc.idx1] += bid;
       
-      if(item2bidder[idx1_] != -1) {
-        bidder2item[item2bidder[idx1_]] = -1;
+      if(item2bidder[acc.idx1] != -1) {
+        bidder2item[item2bidder[acc.idx1]] = -1;
       } else {
         unassigned_bidders--;
       }
-      bidder2item[bidder] = idx1_;
-      item2bidder[idx1_]  = bidder;
+      bidder2item[bidder] = acc.idx1;
+      item2bidder[acc.idx1]  = bidder;
     }
 
 #ifdef VERBOSE

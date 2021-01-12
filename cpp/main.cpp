@@ -63,9 +63,9 @@ int main(int argc, char *argv[]) {
 
   // --
   // Generate problem  
-  uniform_random_problem(cost_matrix);
-  save_matrix(cost_matrix);
-  // load_matrix(cost_matrix);
+  // uniform_random_problem(cost_matrix);
+  // save_matrix(cost_matrix);
+  load_matrix(cost_matrix);
   
   // --
   // Solve problem
