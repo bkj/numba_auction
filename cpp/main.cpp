@@ -13,14 +13,13 @@ std::default_random_engine generator(SEED);
 typedef int Int;
 typedef double Real;
 
-const Int n_bidders = 5000;
-const Int n_items   = 5000;
-const Int max_cost  = 10000;
-const Real eps      = 0.1;
+const Int n_bidders = 4000;
+const Int n_items   = 4000;
+const Int max_cost  = 1000;
+const Real eps      = 1.0 / 4001;
 
 // --
 // Helpers
-
 
 void uniform_random_problem(Real* cost_matrix) {
   std::uniform_real_distribution<Real> distribution(0.0, (Real)max_cost);
