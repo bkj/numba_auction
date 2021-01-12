@@ -10,7 +10,7 @@
 
 using namespace std::chrono;
 
-#define VERBOSE
+// #define VERBOSE
 
 template<typename Val, typename Int>
 void fill(Val* x, Int n, Val val) {
@@ -65,25 +65,21 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
     for(Int bidder = 0; bidder < n_bidders; bidder++) {
       if(bidder2item[bidder] != -1) continue;
 
-      Int idx2_  = -1;
       Int idx1_  = -1;
-      Real val2_ = -1;
       Real val1_ = -1;
+      Real val2_ = -1;
       
       for(Int item = 0; item < n_items; item++) {
         Real val = cost_matrix[n_bidders * bidder + item] - cost[item];
         if(val > val1_) {
-          idx2_ = idx1_;
-          idx1_ = item;
           val2_ = val1_;
           val1_ = val;
+          idx1_ = item;
         } else if(val > val2_) {
-          idx2_ = item;
           val2_ = val;
         }
       }
       
-      idx2[bidder] = idx2_;
       idx1[bidder] = idx1_;
       val2[bidder] = val2_;
       val1[bidder] = val1_;
