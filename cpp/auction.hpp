@@ -98,8 +98,7 @@ long long auction(Real* cost_matrix, Int n_bidders, Int n_items, Real eps, Int* 
         }
       }
       
-      Real bid = acc.val1 - acc.val2 + eps;
-      cost[acc.idx1] += bid;
+      cost[acc.idx1] += acc.val1 - acc.val2 + eps;;
       
       bool had_bidder = item2bidder[acc.idx1] != -1;
       
