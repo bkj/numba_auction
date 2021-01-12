@@ -12,10 +12,10 @@ std::default_random_engine generator(SEED);
 typedef int Int;
 typedef double Real;
 
-const Int n_bidders = 100;
-const Int n_items   = 100;
-const Int max_cost  = 100;
-const Real eps      = 1.0 / 101;
+const Int n_bidders = 8000;
+const Int n_items   = 8000;
+const Int max_cost  = 1000;
+const Real eps      = 1.0 / 8001;
 
 // --
 // Helpers
